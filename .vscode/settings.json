@@ -1,0 +1,29 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "Teaching_assistant",
+            "database": "postgres",
+            "username": "postgres",
+            "password": "Ayush2005",
+            "connectionTimeout": 30
+        },
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "Teaching_assistant",
+            "database": "edumentor",
+            "username": "postgres",
+            "connectionTimeout": 30,
+            "password": "Ayush2005"
+        }
+    ],
+    "python-envs.defaultEnvManager": "ms-python.python:system"
+}
