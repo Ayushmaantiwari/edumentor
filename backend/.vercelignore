@@ -1,0 +1,11 @@
+venv/
+.venv/
+__pycache__/
+uploads/
+vector_store/
+backend/
+*.pyc
+*.pyo
+*.log
+test_*.py
+tests/
