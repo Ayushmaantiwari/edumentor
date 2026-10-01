@@ -3,6 +3,8 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import Text
 
+from pgvector.sqlalchemy import Vector
+
 from app.database import Base
 
 
@@ -35,4 +37,9 @@ class DocumentChunk(Base):
     content = Column(
         Text,
         nullable=False
+    )
+
+    embedding = Column(
+        Vector(384),
+        nullable=True
     )

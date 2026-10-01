@@ -386,15 +386,34 @@ async def upload_document(
         "STEP 6: Adding embeddings to FAISS..."
     )
 
-
     add_embeddings_to_faiss(
         embeddings,
         chunk_ids
     )
 
-
     print(
         "STEP 6 COMPLETE: FAISS index saved."
+    )
+
+
+    # --------------------------------------------------
+    # STEP 7: Save embeddings to document chunks
+    # --------------------------------------------------
+
+    print(
+        "STEP 7: Saving embeddings to PostgreSQL..."
+    )
+
+    for document_chunk, embedding in zip(
+        created_chunks,
+        embeddings
+    ):
+        document_chunk.embedding = embedding
+
+    db.commit()
+
+    print(
+        "STEP 7 COMPLETE: Embeddings saved."
     )
 
 
@@ -435,7 +454,6 @@ async def upload_document(
         }
 
     }
-
 
 # ======================================================
 # GET ALL DOCUMENTS

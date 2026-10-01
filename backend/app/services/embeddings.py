@@ -1,25 +1,27 @@
-from sentence_transformers import SentenceTransformer
+from huggingface_hub import InferenceClient
 
+from app.config import HF_TOKEN
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
-
-model = SentenceTransformer(MODEL_NAME)
+client = InferenceClient(api_key=HF_TOKEN)
 
 
 def generate_embedding(text: str) -> list[float]:
-    embedding = model.encode(
+    embedding = client.feature_extraction(
         text,
-        normalize_embeddings=True
+        model=MODEL_NAME,
+        normalize=True
     )
 
     return embedding.tolist()
 
 
 def generate_embeddings(texts: list[str]) -> list[list[float]]:
-    embeddings = model.encode(
+    embeddings = client.feature_extraction(
         texts,
-        normalize_embeddings=True
+        model=MODEL_NAME,
+        normalize=True
     )
 
     return embeddings.tolist()
