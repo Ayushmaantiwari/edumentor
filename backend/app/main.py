@@ -51,11 +51,10 @@ app = FastAPI(
 allowed_origins = [
     "http://localhost:5173",
 
-    # Current deployed frontend
-    "https://project-86dk6-oietn3e7b-ayushmaantiwari99-3602s-projects.vercel.app",
+    # Production frontend
+    "https://project-86dk6.vercel.app",
 ]
 
-# Also allow the frontend URL configured in Vercel
 if FRONTEND_URL:
     allowed_origins.append(
         FRONTEND_URL.rstrip("/")
@@ -68,16 +67,10 @@ allowed_origins = list(
 
 app.add_middleware(
     CORSMiddleware,
-
     allow_origins=allowed_origins,
-
-    # Allow Vercel deployment/preview URLs
     allow_origin_regex=r"^https://.*\.vercel\.app$",
-
     allow_credentials=True,
-
     allow_methods=["*"],
-
     allow_headers=["*"],
 )
 # ============================================================
