@@ -47,7 +47,7 @@ router = APIRouter(
 # UPLOAD DIRECTORY
 # ======================================================
 
-UPLOAD_DIRECTORY = "/tmp/uploads"
+UPLOAD_DIRECTORY = "uploads"
 
 
 # ======================================================
