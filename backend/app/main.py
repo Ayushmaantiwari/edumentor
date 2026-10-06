@@ -48,50 +48,38 @@ app = FastAPI(
 # CORS
 # ============================================================
 
-# Start with the configured frontend URL.
-allowed_origins = []
+allowed_origins = [
+    "http://localhost:5173",
 
+    # Current deployed frontend
+    "https://project-86dk6-oietn3e7b-ayushmaantiwari99-3602s-projects.vercel.app",
+]
+
+# Also allow the frontend URL configured in Vercel
 if FRONTEND_URL:
     allowed_origins.append(
         FRONTEND_URL.rstrip("/")
     )
-
-# Local development frontend
-allowed_origins.append(
-    "http://localhost:5173"
-)
 
 # Remove duplicates
 allowed_origins = list(
     dict.fromkeys(allowed_origins)
 )
 
-
 app.add_middleware(
     CORSMiddleware,
 
     allow_origins=allowed_origins,
 
-    # Allow Vercel preview/deployment URLs for this project.
-    # This prevents login from breaking when Vercel generates
-    # a new deployment URL.
-    allow_origin_regex=(
-        r"^https://edumentor-student-[a-z0-9]+-"
-        r"ayushmaantiwari99-3602s-projects\.vercel\.app$"
-    ),
+    # Allow Vercel deployment/preview URLs
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
 
     allow_credentials=True,
 
-    allow_methods=[
-        "*"
-    ],
+    allow_methods=["*"],
 
-    allow_headers=[
-        "*"
-    ],
+    allow_headers=["*"],
 )
-
-
 # ============================================================
 # ROUTERS
 # ============================================================
