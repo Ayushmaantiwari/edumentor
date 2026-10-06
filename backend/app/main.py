@@ -50,11 +50,10 @@ app = FastAPI(
 
 allowed_origins = [
     "http://localhost:5173",
-
-    # Production frontend
     "https://project-86dk6.vercel.app",
 ]
 
+# Add FRONTEND_URL from environment variables if available
 if FRONTEND_URL:
     allowed_origins.append(
         FRONTEND_URL.rstrip("/")
@@ -68,11 +67,19 @@ allowed_origins = list(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+
+    # Allow Vercel preview deployments
     allow_origin_regex=r"^https://.*\.vercel\.app$",
-    allow_credentials=True,
+
+    # We are using JWT Authorization headers,
+    # not browser cookies.
+    allow_credentials=False,
+
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 # ============================================================
 # ROUTERS
 # ============================================================
