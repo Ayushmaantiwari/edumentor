@@ -14,4 +14,4 @@ email-validator==2.3.0
 pymupdf==1.28.2
 numpy==2.5.3
 huggingface_hub==1.31.0
-httpx==0.28.1
+httpx==0.28.1pgvector==0.4.1
