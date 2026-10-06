@@ -1,37 +1,63 @@
+// ==================================================
+// EduMentor API Configuration
+// ==================================================
+
 const API_BASE_URL =
-  "https://edumentor-student-two.vercel.app";
+  "https://edumentor-student-izm38a00n-ayushmaantiwari99-3602s-projects.vercel.app";
 
 
 // ==================================================
 // Generic API Request
 // ==================================================
 
-async function apiRequest(
-  endpoint,
-  options = {}
-) {
-  const response = await fetch(
-    `${API_BASE_URL}${endpoint}`,
-    {
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      },
-      ...options
-    }
-  );
+async function apiRequest(endpoint, options = {}) {
+  let response;
 
-  if (!response.ok) {
-    const data =
-      await response.json().catch(() => ({}));
+  try {
+    response = await fetch(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        ...options,
+
+        headers: {
+          ...(options.headers || {}),
+        },
+      }
+    );
+  } catch (error) {
+    console.error("API connection error:", error);
 
     throw new Error(
+      "Unable to connect to EduMentor server. Please check your internet connection or try again."
+    );
+  }
+
+  let data = {};
+
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(
       data.detail ||
+      data.message ||
       `API request failed: ${response.status}`
     );
   }
 
-  return response.json();
+  return data;
+}
+
+
+// ==================================================
+// Get Authentication Token
+// ==================================================
+
+function getToken() {
+  return localStorage.getItem("access_token");
 }
 
 
@@ -58,11 +84,15 @@ export async function registerUser(
     {
       method: "POST",
 
+      headers: {
+        "Content-Type": "application/json",
+      },
+
       body: JSON.stringify({
         name,
         email,
-        password
-      })
+        password,
+      }),
     }
   );
 }
@@ -76,8 +106,7 @@ export async function loginUser(
   email,
   password
 ) {
-  const formData =
-    new URLSearchParams();
+  const formData = new URLSearchParams();
 
   formData.append(
     "username",
@@ -89,31 +118,91 @@ export async function loginUser(
     password
   );
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/auth/login`,
-    {
-      method: "POST",
+  let response;
 
-      headers: {
-        "Content-Type":
-          "application/x-www-form-urlencoded"
-      },
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/api/auth/login`,
+      {
+        method: "POST",
 
-      body: formData
-    }
-  );
+        headers: {
+          "Content-Type":
+            "application/x-www-form-urlencoded",
+        },
 
-  const data =
-    await response.json();
+        body: formData.toString(),
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Login connection error:",
+      error
+    );
+
+    throw new Error(
+      "Unable to connect to EduMentor server."
+    );
+  }
+
+  let data = {};
+
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
     throw new Error(
       data.detail ||
+      data.message ||
       "Invalid email or password"
     );
   }
 
+  // --------------------------------------------------
+  // Save access token
+  // --------------------------------------------------
+
+  if (data.access_token) {
+    localStorage.setItem(
+      "access_token",
+      data.access_token
+    );
+  }
+
+  // --------------------------------------------------
+  // Save token type if returned
+  // --------------------------------------------------
+
+  if (data.token_type) {
+    localStorage.setItem(
+      "token_type",
+      data.token_type
+    );
+  }
+
   return data;
+}
+
+
+// ==================================================
+// Logout
+// ==================================================
+
+export function logoutUser() {
+  localStorage.removeItem(
+    "access_token"
+  );
+
+  localStorage.removeItem(
+    "token_type"
+  );
+
+  localStorage.removeItem(
+    "user"
+  );
 }
 
 
@@ -124,40 +213,64 @@ export async function loginUser(
 export async function uploadDocument(
   file
 ) {
-  const token =
-    localStorage.getItem(
-      "access_token"
-    );
+  const token = getToken();
 
-  const formData =
-    new FormData();
+  if (!token) {
+    throw new Error(
+      "You are not logged in. Please sign in again."
+    );
+  }
+
+  const formData = new FormData();
 
   formData.append(
     "file",
     file
   );
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/documents/upload`,
-    {
-      method: "POST",
+  let response;
 
-      headers: {
-        Authorization:
-          `Bearer ${token}`
-      },
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/api/documents/upload`,
+      {
+        method: "POST",
 
-      body: formData
-    }
-  );
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+        },
 
-  const data =
-    await response.json();
+        // IMPORTANT:
+        // Do NOT manually set Content-Type here.
+        // Browser automatically creates the multipart boundary.
+        body: formData,
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Upload connection error:",
+      error
+    );
+
+    throw new Error(
+      "Unable to connect to EduMentor server while uploading the PDF."
+    );
+  }
+
+  let data = {};
+
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
     throw new Error(
       data.detail ||
-      "Failed to upload document"
+      data.message ||
+      `Failed to upload document (${response.status})`
     );
   }
 
@@ -170,34 +283,25 @@ export async function uploadDocument(
 // ==================================================
 
 export async function getDocuments() {
-  const token =
-    localStorage.getItem(
-      "access_token"
-    );
+  const token = getToken();
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/documents/`,
+  if (!token) {
+    throw new Error(
+      "You are not logged in. Please sign in again."
+    );
+  }
+
+  return apiRequest(
+    "/api/documents/",
     {
       method: "GET",
 
       headers: {
         Authorization:
-          `Bearer ${token}`
-      }
+          `Bearer ${token}`,
+      },
     }
   );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.detail ||
-      "Failed to load documents"
-    );
-  }
-
-  return data;
 }
 
 
@@ -208,34 +312,25 @@ export async function getDocuments() {
 export async function deleteDocument(
   documentId
 ) {
-  const token =
-    localStorage.getItem(
-      "access_token"
-    );
+  const token = getToken();
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/documents/${documentId}`,
+  if (!token) {
+    throw new Error(
+      "You are not logged in. Please sign in again."
+    );
+  }
+
+  return apiRequest(
+    `/api/documents/${documentId}`,
     {
       method: "DELETE",
 
       headers: {
         Authorization:
-          `Bearer ${token}`
-      }
+          `Bearer ${token}`,
+      },
     }
   );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.detail ||
-      "Failed to delete document"
-    );
-  }
-
-  return data;
 }
 
 
@@ -248,13 +343,16 @@ export async function generateQuiz(
   questionCount = 5,
   difficulty = "medium"
 ) {
-  const token =
-    localStorage.getItem(
-      "access_token"
-    );
+  const token = getToken();
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/quiz/generate`,
+  if (!token) {
+    throw new Error(
+      "You are not logged in. Please sign in again."
+    );
+  }
+
+  return apiRequest(
+    "/api/quiz/generate",
     {
       method: "POST",
 
@@ -263,7 +361,7 @@ export async function generateQuiz(
           "application/json",
 
         Authorization:
-          `Bearer ${token}`
+          `Bearer ${token}`,
       },
 
       body: JSON.stringify({
@@ -274,22 +372,10 @@ export async function generateQuiz(
           Number(questionCount),
 
         difficulty:
-          difficulty
-      })
+          difficulty,
+      }),
     }
   );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.detail ||
-      "Failed to generate quiz."
-    );
-  }
-
-  return data;
 }
 
 
@@ -301,13 +387,16 @@ export async function submitQuiz(
   quizId,
   answers
 ) {
-  const token =
-    localStorage.getItem(
-      "access_token"
-    );
+  const token = getToken();
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/quiz/submit`,
+  if (!token) {
+    throw new Error(
+      "You are not logged in. Please sign in again."
+    );
+  }
+
+  return apiRequest(
+    "/api/quiz/submit",
     {
       method: "POST",
 
@@ -316,7 +405,7 @@ export async function submitQuiz(
           "application/json",
 
         Authorization:
-          `Bearer ${token}`
+          `Bearer ${token}`,
       },
 
       body: JSON.stringify({
@@ -324,22 +413,10 @@ export async function submitQuiz(
           Number(quizId),
 
         answers:
-          answers
-      })
+          answers,
+      }),
     }
   );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.detail ||
-      "Failed to submit quiz."
-    );
-  }
-
-  return data;
 }
 
 
@@ -348,13 +425,16 @@ export async function submitQuiz(
 // ==================================================
 
 export async function getAnalyticsOverview() {
-  const token =
-    localStorage.getItem(
-      "access_token"
-    );
+  const token = getToken();
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/analytics/overview`,
+  if (!token) {
+    throw new Error(
+      "You are not logged in. Please sign in again."
+    );
+  }
+
+  return apiRequest(
+    "/api/analytics/overview",
     {
       method: "GET",
 
@@ -363,20 +443,15 @@ export async function getAnalyticsOverview() {
           `Bearer ${token}`,
 
         "Content-Type":
-          "application/json"
-      }
+          "application/json",
+      },
     }
   );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.detail ||
-      "Failed to load analytics."
-    );
-  }
-
-  return data;
 }
+
+
+// ==================================================
+// Export API Base URL
+// ==================================================
+
+export { API_BASE_URL };
