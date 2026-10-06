@@ -10,6 +10,7 @@ from app.config import (
 
 from app.database import engine, Base
 
+
 # ============================================================
 # MODELS
 # ============================================================
@@ -44,20 +45,80 @@ app = FastAPI(
 
 
 # ============================================================
+# CORS
+# ============================================================
+
+# Start with the configured frontend URL.
+allowed_origins = []
+
+if FRONTEND_URL:
+    allowed_origins.append(
+        FRONTEND_URL.rstrip("/")
+    )
+
+# Local development frontend
+allowed_origins.append(
+    "http://localhost:5173"
+)
+
+# Remove duplicates
+allowed_origins = list(
+    dict.fromkeys(allowed_origins)
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+
+    allow_origins=allowed_origins,
+
+    # Allow Vercel preview/deployment URLs for this project.
+    # This prevents login from breaking when Vercel generates
+    # a new deployment URL.
+    allow_origin_regex=(
+        r"^https://edumentor-student-[a-z0-9]+-"
+        r"ayushmaantiwari99-3602s-projects\.vercel\.app$"
+    ),
+
+    allow_credentials=True,
+
+    allow_methods=[
+        "*"
+    ],
+
+    allow_headers=[
+        "*"
+    ],
+)
+
+
+# ============================================================
 # ROUTERS
 # ============================================================
 
-app.include_router(auth_router)
+app.include_router(
+    auth_router
+)
 
-app.include_router(documents_router)
+app.include_router(
+    documents_router
+)
 
-app.include_router(search_router)
+app.include_router(
+    search_router
+)
 
-app.include_router(chat_router)
+app.include_router(
+    chat_router
+)
 
-app.include_router(quiz_router)
+app.include_router(
+    quiz_router
+)
 
-app.include_router(analytics_router)
+app.include_router(
+    analytics_router
+)
 
 
 # ============================================================
@@ -73,29 +134,6 @@ def create_tables():
 
 
 # ============================================================
-# CORS
-# ============================================================
-
-app.add_middleware(
-    CORSMiddleware,
-
-    allow_origins=[
-        FRONTEND_URL
-    ],
-
-    allow_credentials=True,
-
-    allow_methods=[
-        "*"
-    ],
-
-    allow_headers=[
-        "*"
-    ],
-)
-
-
-# ============================================================
 # ROOT
 # ============================================================
 
@@ -103,11 +141,8 @@ app.add_middleware(
 def root():
 
     return {
-        "message":
-            "EduMentor API is running",
-
-        "version":
-            APP_VERSION
+        "message": "EduMentor API is running",
+        "version": APP_VERSION
     }
 
 
