@@ -1,5 +1,10 @@
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL =
+  "https://edumentor-student-two.vercel.app";
 
+
+// ==================================================
+// Generic API Request
+// ==================================================
 
 async function apiRequest(
   endpoint,
@@ -12,13 +17,16 @@ async function apiRequest(
         "Content-Type": "application/json",
         ...(options.headers || {})
       },
-
       ...options
     }
   );
 
   if (!response.ok) {
+    const data =
+      await response.json().catch(() => ({}));
+
     throw new Error(
+      data.detail ||
       `API request failed: ${response.status}`
     );
   }
@@ -27,19 +35,18 @@ async function apiRequest(
 }
 
 
-// --------------------------------
+// ==================================================
 // Backend Health
-// --------------------------------
+// ==================================================
 
 export async function testBackend() {
-
   return apiRequest("/api/health");
-
 }
 
-// --------------------------------
+
+// ==================================================
 // User Registration
-// --------------------------------
+// ==================================================
 
 export async function registerUser(
   name,
@@ -50,6 +57,7 @@ export async function registerUser(
     "/api/auth/register",
     {
       method: "POST",
+
       body: JSON.stringify({
         name,
         email,
@@ -59,15 +67,17 @@ export async function registerUser(
   );
 }
 
-// --------------------------------
+
+// ==================================================
 // User Login
-// --------------------------------
+// ==================================================
+
 export async function loginUser(
   email,
   password
 ) {
-
-  const formData = new URLSearchParams();
+  const formData =
+    new URLSearchParams();
 
   formData.append(
     "username",
@@ -78,7 +88,6 @@ export async function loginUser(
     "password",
     password
   );
-
 
   const response = await fetch(
     `${API_BASE_URL}/api/auth/login`,
@@ -94,32 +103,39 @@ export async function loginUser(
     }
   );
 
-
-  const data = await response.json();
-
+  const data =
+    await response.json();
 
   if (!response.ok) {
-
     throw new Error(
       data.detail ||
       "Invalid email or password"
     );
-
   }
-
 
   return data;
 }
 
-// --------------------------------
-// Upload Documents
-// --------------------------------
-export async function uploadDocument(file) {
-  const token = localStorage.getItem("access_token");
 
-  const formData = new FormData();
+// ==================================================
+// Upload Document
+// ==================================================
 
-  formData.append("file", file);
+export async function uploadDocument(
+  file
+) {
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
+
+  const formData =
+    new FormData();
+
+  formData.append(
+    "file",
+    file
+  );
 
   const response = await fetch(
     `${API_BASE_URL}/api/documents/upload`,
@@ -127,14 +143,16 @@ export async function uploadDocument(file) {
       method: "POST",
 
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization:
+          `Bearer ${token}`
       },
 
-      body: formData,
+      body: formData
     }
   );
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     throw new Error(
@@ -146,15 +164,16 @@ export async function uploadDocument(file) {
   return data;
 }
 
-// --------------------------------
-// Upload Function
-// --------------------------------
 
+// ==================================================
+// Get Documents
+// ==================================================
 
 export async function getDocuments() {
-  const token = localStorage.getItem(
-    "access_token"
-  );
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
 
   const response = await fetch(
     `${API_BASE_URL}/api/documents/`,
@@ -162,12 +181,14 @@ export async function getDocuments() {
       method: "GET",
 
       headers: {
-        Authorization: `Bearer ${token}`,
-      },
+        Authorization:
+          `Bearer ${token}`
+      }
     }
   );
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     throw new Error(
@@ -180,12 +201,17 @@ export async function getDocuments() {
 }
 
 
+// ==================================================
+// Delete Document
+// ==================================================
+
 export async function deleteDocument(
   documentId
 ) {
-  const token = localStorage.getItem(
-    "access_token"
-  );
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
 
   const response = await fetch(
     `${API_BASE_URL}/api/documents/${documentId}`,
@@ -193,12 +219,14 @@ export async function deleteDocument(
       method: "DELETE",
 
       headers: {
-        Authorization: `Bearer ${token}`,
-      },
+        Authorization:
+          `Bearer ${token}`
+      }
     }
   );
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     throw new Error(
@@ -211,107 +239,144 @@ export async function deleteDocument(
 }
 
 
-// --------------------------------
-// Quiz Generation and Submission
-// --------------------------------
-
+// ==================================================
+// Generate Quiz
+// ==================================================
 
 export async function generateQuiz(
   documentId,
   questionCount = 5,
   difficulty = "medium"
 ) {
-  const token = localStorage.getItem("access_token");
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
 
   const response = await fetch(
-    "http://127.0.0.1:8000/api/quiz/generate",
+    `${API_BASE_URL}/api/quiz/generate`,
     {
       method: "POST",
 
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        "Content-Type":
+          "application/json",
+
+        Authorization:
+          `Bearer ${token}`
       },
 
       body: JSON.stringify({
-        document_id: Number(documentId),
-        question_count: Number(questionCount),
-        difficulty: difficulty,
-      }),
+        document_id:
+          Number(documentId),
+
+        question_count:
+          Number(questionCount),
+
+        difficulty:
+          difficulty
+      })
     }
   );
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     throw new Error(
-      data.detail || "Failed to generate quiz."
+      data.detail ||
+      "Failed to generate quiz."
     );
   }
 
   return data;
 }
 
+
+// ==================================================
+// Submit Quiz
+// ==================================================
 
 export async function submitQuiz(
   quizId,
   answers
 ) {
-  const token = localStorage.getItem("access_token");
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
 
   const response = await fetch(
-    "http://127.0.0.1:8000/api/quiz/submit",
+    `${API_BASE_URL}/api/quiz/submit`,
     {
       method: "POST",
 
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        "Content-Type":
+          "application/json",
+
+        Authorization:
+          `Bearer ${token}`
       },
 
       body: JSON.stringify({
-        quiz_id: Number(quizId),
-        answers: answers,
-      }),
+        quiz_id:
+          Number(quizId),
+
+        answers:
+          answers
+      })
     }
   );
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     throw new Error(
-      data.detail || "Failed to submit quiz."
+      data.detail ||
+      "Failed to submit quiz."
     );
   }
 
   return data;
 }
 
-// --------------------------------
+
+// ==================================================
 // Student Analytics
-// --------------------------------
+// ==================================================
 
 export async function getAnalyticsOverview() {
-  const token = localStorage.getItem("access_token");
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
 
   const response = await fetch(
-    "http://127.0.0.1:8000/api/analytics/overview",
+    `${API_BASE_URL}/api/analytics/overview`,
     {
       method: "GET",
+
       headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+        Authorization:
+          `Bearer ${token}`,
+
+        "Content-Type":
+          "application/json"
+      }
     }
   );
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+  const data =
+    await response.json();
 
+  if (!response.ok) {
     throw new Error(
-      errorData.detail || "Failed to load analytics."
+      data.detail ||
+      "Failed to load analytics."
     );
   }
 
-  return response.json();
+  return data;
 }
