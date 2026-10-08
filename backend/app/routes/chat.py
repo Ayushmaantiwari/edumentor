@@ -9,11 +9,19 @@ from app.utils.auth import get_current_user
 from app.services.rag import answer_question
 
 
+# ======================================================
+# ROUTER
+# ======================================================
+
 router = APIRouter(
     prefix="/api/chat",
-    tags=["AI Tutor"]
+    tags=["Chat"]
 )
 
+
+# ======================================================
+# REQUEST MODEL
+# ======================================================
 
 class ChatRequest(BaseModel):
 
@@ -36,7 +44,11 @@ class ChatRequest(BaseModel):
     )
 
 
-@router.post("/")
+# ======================================================
+# CHAT ENDPOINT
+# ======================================================
+
+@router.post("")
 def chat(
     request: ChatRequest,
     db: Session = Depends(get_db),
@@ -44,28 +56,70 @@ def chat(
 ):
 
     print(
-        f"AI Tutor request from user "
-        f"{current_user.id}"
+        "=========================================="
     )
 
     print(
-        f"Selected document ID: "
-        f"{request.document_id}"
+        "AI TUTOR REQUEST"
     )
 
-    # --------------------------------------------------
-    # Verify that the selected document belongs
-    # to the logged-in user
-    # --------------------------------------------------
+    print(
+        f"User ID: {current_user.id}"
+    )
 
-    document = (
-        db.query(Document)
-        .filter(
-            Document.id == request.document_id,
-            Document.user_id == current_user.id
+    print(
+        f"Document ID: {request.document_id}"
+    )
+
+    print(
+        f"Question: {request.question}"
+    )
+
+    print(
+        f"Top K: {request.top_k}"
+    )
+
+    print(
+        "=========================================="
+    )
+
+
+    # ==================================================
+    # STEP 1: VERIFY DOCUMENT
+    # ==================================================
+
+    try:
+
+        document = (
+            db.query(Document)
+            .filter(
+                Document.id == request.document_id,
+                Document.user_id == current_user.id
+            )
+            .first()
         )
-        .first()
-    )
+
+    except Exception as error:
+
+        print(
+            "========== DATABASE ERROR =========="
+        )
+
+        print(
+            repr(error)
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Unable to verify the selected document."
+            )
+        )
+
+
+    # ==================================================
+    # STEP 2: DOCUMENT NOT FOUND
+    # ==================================================
 
     if document is None:
 
@@ -77,31 +131,127 @@ def chat(
             )
         )
 
+
     print(
-        f"Selected document: "
-        f"{document.filename}"
+        f"Selected document: {document.filename}"
     )
 
-    # --------------------------------------------------
-    # Run document-specific RAG
-    # --------------------------------------------------
 
-    result = answer_question(
-        db=db,
-        question=request.question,
-        user_id=current_user.id,
-        document_id=request.document_id,
-        top_k=request.top_k
+    # ==================================================
+    # STEP 3: RUN RAG
+    # ==================================================
+
+    try:
+
+        print(
+            "Starting document-specific RAG..."
+        )
+
+        result = answer_question(
+            db=db,
+            question=request.question,
+            user_id=current_user.id,
+            document_id=request.document_id,
+            top_k=request.top_k
+        )
+
+        print(
+            "RAG completed successfully."
+        )
+
+
+    except HTTPException:
+
+        raise
+
+
+    except Exception as error:
+
+        print(
+            "=========================================="
+        )
+
+        print(
+            "CHAT / RAG ERROR"
+        )
+
+        print(
+            f"Error type: {type(error).__name__}"
+        )
+
+        print(
+            f"Error message: {str(error)}"
+        )
+
+        print(
+            repr(error)
+        )
+
+        print(
+            "=========================================="
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Chat generation failed: "
+                f"{str(error)}"
+            )
+        )
+
+
+    # ==================================================
+    # STEP 4: VALIDATE RAG RESULT
+    # ==================================================
+
+    if not isinstance(result, dict):
+
+        print(
+            "Invalid RAG response:"
+        )
+
+        print(
+            repr(result)
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Invalid response received from RAG service."
+        )
+
+
+    answer = result.get(
+        "answer",
+        ""
     )
 
-    # --------------------------------------------------
-    # Return response
-    # --------------------------------------------------
+    sources = result.get(
+        "sources",
+        []
+    )
+
+
+    # ==================================================
+    # STEP 5: RETURN RESPONSE
+    # ==================================================
+
+    print(
+        "Returning AI Tutor response."
+    )
+
+    print(
+        f"Sources returned: {len(sources)}"
+    )
+
 
     return {
         "question": request.question,
+
         "document_id": document.id,
+
         "document_name": document.filename,
-        "answer": result["answer"],
-        "sources": result["sources"]
+
+        "answer": answer,
+
+        "sources": sources
     }

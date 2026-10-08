@@ -22,7 +22,7 @@ APP_VERSION = os.getenv(
 
 FRONTEND_URL = os.getenv(
     "FRONTEND_URL",
-    "http://localhost:5173"
+    "https://project-86dk6.vercel.app"
 )
 
 
@@ -57,14 +57,31 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(
 
 
 # ======================================================
-# HUGGING FACE LLM
+# GOOGLE GEMINI API
 # ======================================================
 
-HF_TOKEN = os.getenv(
-    "HF_TOKEN"
+GEMINI_API_KEY = os.getenv(
+    "GEMINI_API_KEY"
 )
 
-HF_MODEL = os.getenv(
-    "HF_MODEL",
-    "Qwen/Qwen3-4B-Instruct-2507"
+GEMINI_MODEL = os.getenv(
+    "GEMINI_MODEL",
+    "gemini-2.5-flash"
+)
+
+
+# ======================================================
+# GEMINI EMBEDDING MODEL
+# ======================================================
+
+GEMINI_EMBEDDING_MODEL = os.getenv(
+    "GEMINI_EMBEDDING_MODEL",
+    "gemini-embedding-001"
+)
+
+GEMINI_EMBEDDING_DIMENSION = int(
+    os.getenv(
+        "GEMINI_EMBEDDING_DIMENSION",
+        "384"
+    )
 )

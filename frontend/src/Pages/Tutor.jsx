@@ -1,22 +1,31 @@
 import { useEffect, useState } from "react";
-import { getDocuments } from "../services/api.js";
+
+import {
+  getDocuments,
+  askTutor
+} from "../services/api.js";
+
 
 function Tutor() {
   const [documents, setDocuments] = useState([]);
-  const [selectedDocumentId, setSelectedDocumentId] = useState("");
+  const [selectedDocumentId, setSelectedDocumentId] =
+    useState("");
 
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState([]);
 
-  const [loadingDocuments, setLoadingDocuments] = useState(true);
+  const [loadingDocuments, setLoadingDocuments] =
+    useState(true);
+
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState("");
 
-  // --------------------------------------------------
+
+  // ==================================================
   // Load user's PDFs
-  // --------------------------------------------------
+  // ==================================================
 
   useEffect(() => {
     async function loadDocuments() {
@@ -26,7 +35,8 @@ function Tutor() {
 
         const data = await getDocuments();
 
-        const userDocuments = data.documents || [];
+        const userDocuments =
+          data.documents || [];
 
         setDocuments(userDocuments);
 
@@ -36,13 +46,18 @@ function Tutor() {
             String(userDocuments[0].id)
           );
         }
+
       } catch (err) {
-        console.error(err);
+        console.error(
+          "Failed to load documents:",
+          err
+        );
 
         setError(
           err.message ||
           "Failed to load your documents."
         );
+
       } finally {
         setLoadingDocuments(false);
       }
@@ -51,91 +66,118 @@ function Tutor() {
     loadDocuments();
   }, []);
 
-  // --------------------------------------------------
+
+  // ==================================================
   // Handle PDF change
-  // --------------------------------------------------
+  // ==================================================
 
   function handleDocumentChange(event) {
-    const documentId = event.target.value;
+    const documentId =
+      event.target.value;
 
-    setSelectedDocumentId(documentId);
+    setSelectedDocumentId(
+      documentId
+    );
 
-    // Clear old conversation answer
+    // Clear previous answer
     setAnswer("");
+
+    // Clear previous sources
     setSources([]);
+
+    // Clear previous error
     setError("");
   }
 
-  // --------------------------------------------------
-  // Ask question
-  // --------------------------------------------------
+
+  // ==================================================
+  // Ask AI Tutor
+  // ==================================================
 
   async function askQuestion() {
+
+    // ----------------------------------------------
+    // Check question
+    // ----------------------------------------------
 
     if (!question.trim()) {
       return;
     }
 
+
+    // ----------------------------------------------
+    // Check selected document
+    // ----------------------------------------------
+
     if (!selectedDocumentId) {
       setError(
         "Please select a PDF before asking a question."
       );
+
       return;
     }
 
+
+    // ----------------------------------------------
+    // Start loading
+    // ----------------------------------------------
+
     setLoading(true);
+
     setError("");
     setAnswer("");
-    setSources([]);
+    setSources("");
+
 
     try {
 
-      const token =
-        localStorage.getItem("access_token");
+      // --------------------------------------------
+      // Call backend through api.js
+      // --------------------------------------------
 
-      const response = await fetch(
-        "http://localhost:8000/api/chat/",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-
-          body: JSON.stringify({
-            question: question.trim(),
-
-            document_id:
-              Number(selectedDocumentId),
-
-            top_k: 5,
-          }),
-        }
+      const data = await askTutor(
+        question.trim(),
+        selectedDocumentId,
+        5
       );
 
-      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(
-          data.detail ||
-          "Failed to get AI response."
-        );
-      }
+      // --------------------------------------------
+      // Set AI answer
+      // --------------------------------------------
 
-      setAnswer(data.answer || "");
+      setAnswer(
+        data.answer || ""
+      );
+
+
+      // --------------------------------------------
+      // Set sources
+      // --------------------------------------------
 
       setSources(
-        data.sources || []
+        Array.isArray(data.sources)
+          ? data.sources
+          : []
       );
+
+
+      // --------------------------------------------
+      // Clear question after successful request
+      // --------------------------------------------
+
+      setQuestion("");
 
     } catch (err) {
 
-      console.error(err);
+      console.error(
+        "AI Tutor error:",
+        err
+      );
 
       setError(
         err.message ||
-        "Something went wrong."
+        "Failed to get an answer from EduMentor."
       );
 
     } finally {
@@ -144,9 +186,10 @@ function Tutor() {
     }
   }
 
-  // --------------------------------------------------
+
+  // ==================================================
   // Enter key
-  // --------------------------------------------------
+  // ==================================================
 
   function handleKeyDown(event) {
 
@@ -161,9 +204,10 @@ function Tutor() {
     }
   }
 
-  // --------------------------------------------------
+
+  // ==================================================
   // Selected document
-  // --------------------------------------------------
+  // ==================================================
 
   const selectedDocument =
     documents.find(
@@ -172,18 +216,25 @@ function Tutor() {
         String(selectedDocumentId)
     );
 
-  // --------------------------------------------------
+
+  // ==================================================
   // UI
-  // --------------------------------------------------
+  // ==================================================
 
   return (
     <div className="tutor-page">
+
+      {/* ==================================================
+          PAGE HEADER
+          ================================================== */}
 
       <div className="page-header">
 
         <div>
 
-          <h1>AI Tutor</h1>
+          <h1>
+            AI Tutor
+          </h1>
 
           <p>
             Ask questions about your uploaded
@@ -197,13 +248,17 @@ function Tutor() {
 
       <div className="tutor-container">
 
-        {/* PDF Selection */}
+
+        {/* ==================================================
+            PDF SELECTION
+            ================================================== */}
 
         <div className="document-selector-card">
 
           <label htmlFor="document-select">
             Choose study material
           </label>
+
 
           {loadingDocuments ? (
 
@@ -222,19 +277,23 @@ function Tutor() {
             <select
               id="document-select"
               value={selectedDocumentId}
-              onChange={handleDocumentChange}
+              onChange={
+                handleDocumentChange
+              }
             >
 
-              {documents.map((document) => (
+              {documents.map(
+                (document) => (
 
-                <option
-                  key={document.id}
-                  value={document.id}
-                >
-                  {document.filename}
-                </option>
+                  <option
+                    key={document.id}
+                    value={document.id}
+                  >
+                    {document.filename}
+                  </option>
 
-              ))}
+                )
+              )}
 
             </select>
 
@@ -243,13 +302,15 @@ function Tutor() {
         </div>
 
 
-        {/* Selected PDF */}
+        {/* ==================================================
+            SELECTED PDF
+            ================================================== */}
 
         {selectedDocument && (
 
           <div className="selected-document">
 
-            📄 Answer based on:
+            📄 Answer based on:{" "}
 
             <strong>
               {selectedDocument.filename}
@@ -260,14 +321,18 @@ function Tutor() {
         )}
 
 
-        {/* Question */}
+        {/* ==================================================
+            QUESTION INPUT
+            ================================================== */}
 
         <div className="chat-input-card">
 
           <textarea
             value={question}
             onChange={(event) =>
-              setQuestion(event.target.value)
+              setQuestion(
+                event.target.value
+              )
             }
             onKeyDown={handleKeyDown}
             placeholder={
@@ -278,16 +343,19 @@ function Tutor() {
             rows={4}
             disabled={
               loadingDocuments ||
-              documents.length === 0
+              documents.length === 0 ||
+              loading
             }
           />
+
 
           <button
             onClick={askQuestion}
             disabled={
               loading ||
               !question.trim() ||
-              !selectedDocumentId
+              !selectedDocumentId ||
+              loadingDocuments
             }
           >
 
@@ -300,7 +368,9 @@ function Tutor() {
         </div>
 
 
-        {/* Error */}
+        {/* ==================================================
+            ERROR
+            ================================================== */}
 
         {error && (
 
@@ -311,11 +381,18 @@ function Tutor() {
         )}
 
 
-        {/* Answer */}
+        {/* ==================================================
+            ANSWER
+            ================================================== */}
 
         {answer && (
 
           <div className="answer-card">
+
+
+            {/* ----------------------------------------------
+                ANSWER HEADER
+                ---------------------------------------------- */}
 
             <div className="answer-header">
 
@@ -338,13 +415,15 @@ function Tutor() {
             </div>
 
 
-            {/* Selected PDF */}
+            {/* ----------------------------------------------
+                SELECTED PDF
+                ---------------------------------------------- */}
 
             {selectedDocument && (
 
               <div className="answer-document">
 
-                📄 Answer based on:
+                📄 Answer based on:{" "}
 
                 <strong>
                   {selectedDocument.filename}
@@ -355,14 +434,18 @@ function Tutor() {
             )}
 
 
-            {/* AI Answer */}
+            {/* ----------------------------------------------
+                AI ANSWER
+                ---------------------------------------------- */}
 
             <div className="answer-content">
               {answer}
             </div>
 
 
-            {/* Sources */}
+            {/* ----------------------------------------------
+                SOURCES
+                ---------------------------------------------- */}
 
             {sources.length > 0 && (
 
@@ -371,6 +454,7 @@ function Tutor() {
                 <h3>
                   Sources
                 </h3>
+
 
                 {sources.map(
                   (source, index) => (
@@ -384,7 +468,10 @@ function Tutor() {
                     >
 
                       📄 Page{" "}
-                      {source.page_number}
+
+                      {source.page_number ??
+                        source.page ??
+                        "N/A"}
 
                     </div>
 
@@ -404,5 +491,6 @@ function Tutor() {
     </div>
   );
 }
+
 
 export default Tutor;

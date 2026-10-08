@@ -3,7 +3,16 @@
 // ==================================================
 
 const API_BASE_URL =
-  "https://edumentor-student-izm38a00n-ayushmaantiwari99-3602s-projects.vercel.app";
+  "https://edumentor-student-two.vercel.app";
+
+
+// ==================================================
+// Get Authentication Token
+// ==================================================
+
+function getToken() {
+  return localStorage.getItem("access_token");
+}
 
 
 // ==================================================
@@ -25,12 +34,19 @@ async function apiRequest(endpoint, options = {}) {
       }
     );
   } catch (error) {
-    console.error("API connection error:", error);
+    console.error(
+      "API connection error:",
+      error
+    );
 
     throw new Error(
       "Unable to connect to EduMentor server. Please check your internet connection or try again."
     );
   }
+
+  // --------------------------------------------------
+  // Read response
+  // --------------------------------------------------
 
   let data = {};
 
@@ -40,11 +56,15 @@ async function apiRequest(endpoint, options = {}) {
     data = {};
   }
 
+  // --------------------------------------------------
+  // Handle API errors
+  // --------------------------------------------------
+
   if (!response.ok) {
     throw new Error(
       data.detail ||
       data.message ||
-      `API request failed: ${response.status}`
+      `API request failed with status ${response.status}`
     );
   }
 
@@ -53,20 +73,13 @@ async function apiRequest(endpoint, options = {}) {
 
 
 // ==================================================
-// Get Authentication Token
-// ==================================================
-
-function getToken() {
-  return localStorage.getItem("access_token");
-}
-
-
-// ==================================================
 // Backend Health
 // ==================================================
 
 export async function testBackend() {
-  return apiRequest("/api/health");
+  return apiRequest(
+    "/api/health"
+  );
 }
 
 
@@ -85,13 +98,14 @@ export async function registerUser(
       method: "POST",
 
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":
+          "application/json",
       },
 
       body: JSON.stringify({
-        name,
-        email,
-        password,
+        name: name,
+        email: email,
+        password: password,
       }),
     }
   );
@@ -106,7 +120,8 @@ export async function loginUser(
   email,
   password
 ) {
-  const formData = new URLSearchParams();
+  const formData =
+    new URLSearchParams();
 
   formData.append(
     "username",
@@ -131,7 +146,8 @@ export async function loginUser(
             "application/x-www-form-urlencoded",
         },
 
-        body: formData.toString(),
+        body:
+          formData.toString(),
       }
     );
   } catch (error) {
@@ -141,7 +157,7 @@ export async function loginUser(
     );
 
     throw new Error(
-      "Unable to connect to EduMentor server."
+      "Unable to connect to EduMentor server. Please check the backend server and CORS configuration."
     );
   }
 
@@ -154,34 +170,41 @@ export async function loginUser(
   }
 
   if (!response.ok) {
+    console.error(
+      "Login failed:",
+      response.status,
+      data
+    );
+
     throw new Error(
       data.detail ||
       data.message ||
-      "Invalid email or password"
+      `Login failed with status ${response.status}`
     );
   }
 
-  // --------------------------------------------------
+  if (!data.access_token) {
+    console.error(
+      "Login response does not contain access_token:",
+      data
+    );
+
+    throw new Error(
+      "Login succeeded but no access token was returned by the server."
+    );
+  }
+
   // Save access token
-  // --------------------------------------------------
+  localStorage.setItem(
+    "access_token",
+    data.access_token
+  );
 
-  if (data.access_token) {
-    localStorage.setItem(
-      "access_token",
-      data.access_token
-    );
-  }
-
-  // --------------------------------------------------
-  // Save token type if returned
-  // --------------------------------------------------
-
-  if (data.token_type) {
-    localStorage.setItem(
-      "token_type",
-      data.token_type
-    );
-  }
+  // Save token type
+  localStorage.setItem(
+    "token_type",
+    data.token_type || "bearer"
+  );
 
   return data;
 }
@@ -221,7 +244,8 @@ export async function uploadDocument(
     );
   }
 
-  const formData = new FormData();
+  const formData =
+    new FormData();
 
   formData.append(
     "file",
@@ -241,9 +265,8 @@ export async function uploadDocument(
             `Bearer ${token}`,
         },
 
-        // IMPORTANT:
-        // Do NOT manually set Content-Type here.
-        // Browser automatically creates the multipart boundary.
+        // Do NOT set Content-Type manually.
+        // Browser creates multipart boundary.
         body: formData,
       }
     );
@@ -329,6 +352,50 @@ export async function deleteDocument(
         Authorization:
           `Bearer ${token}`,
       },
+    }
+  );
+}
+
+
+// ==================================================
+// AI Tutor Chat
+// ==================================================
+
+export async function askTutor(
+  question,
+  documentId,
+  topK = 5
+) {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error(
+      "You are not logged in. Please sign in again."
+    );
+  }
+
+  return apiRequest(
+    "/api/chat",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json",
+
+        Authorization:
+          `Bearer ${token}`,
+      },
+
+      body: JSON.stringify({
+        question: question,
+
+        document_id:
+          Number(documentId),
+
+        top_k:
+          Number(topK),
+      }),
     }
   );
 }
@@ -454,4 +521,6 @@ export async function getAnalyticsOverview() {
 // Export API Base URL
 // ==================================================
 
-export { API_BASE_URL };
+export {
+  API_BASE_URL
+};
